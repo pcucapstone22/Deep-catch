@@ -98,4 +98,4 @@ if __name__ == "__main__":
     freq_result = freq_model(sample_freq)
     print(f"   -> 주파수 모델 출력 크기: {freq_result.shape} (사진 4장 x [진짜점수, 가짜점수] 2개)")
     
-    print("\n[성공] 두 모델 모두 에러 없이 완벽하게 작동합니다!")
+    print("\n[성공] 두 모델 모두 에러 없이 완벽하게 작동합니다!") 
