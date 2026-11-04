@@ -34,7 +34,7 @@ def extract_archives_in_dataset_dir(dataset_dir="./dataset", target_dir="./extra
 
     print(f"[{dataset_dir}] 디렉토리에서 총 {len(archive_files)}개의 압축 파일을 발견했습니다.")
     
-    # [3단계] 압축 해제된 파일들을 담을 대상 디렉토리(target_dir) 생성
+    # [3단계] 압축 해제된 파일들을 담을 대상 디렉토리(target_dir) 생성 
     os.makedirs(target_dir, exist_ok=True)
 
     # [4단계] 발견된 압축 파일들을 하나씩 순회하며 압축 해제 수행
