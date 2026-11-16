@@ -7,11 +7,13 @@ import sys
 # - value: 파이썬 코드에서 import 할 때 사용하는 모듈명
 # ========================================================
 REQUIRED_PACKAGES = {
-    "torch": "torch",
-    "torchvision": "torchvision",
-    "opencv-python": "cv2",
-    "numpy": "numpy",
-    "Pillow": "PIL"
+    "torch": "torch",               # PyTorch 딥러닝 프레임워크
+    "torchvision": "torchvision",   # 컴퓨터 비전 모델 및 전처리 도구
+    "opencv-python": "cv2",         # 이미지 처리 및 DCT 주파수 변환
+    "numpy": "numpy",               # 다차원 배열 및 수치 연산
+    "Pillow": "PIL",                # 이미지 파일 입출력 (import PIL)
+    "streamlit": "streamlit",       # 웹 대시보드 및 UI 구현
+    "pandas": "pandas"              # 데이터프레임 및 DB 로그 표 처리
 }
 
 def install_and_verify():
