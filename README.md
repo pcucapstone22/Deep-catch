@@ -46,7 +46,7 @@ PyTorch 기반의 **공간(Spatial) 및 주파수(Frequency) 듀얼 스트림 �
 
 | 이름 | 구분 | GitHub | 담당 역할 (Role) |
 | :---: | :---: | :--- | :--- |
-| **박준서** | 조장 | [@ALoneFisher](https://github.com/ALoneFisher) | 시스템 전체 설계 및 프로젝트 총괄, AI 딥러닝 |
+| **박준서** | 조장 | [@AloneFisher](https://github.com/AloneFisher) | 시스템 전체 설계 및 프로젝트 총괄, AI 딥러닝 |
 | **손현준** | 팀원 | [@hyenjune](https://github.com/hyenjune) | AI 메인 탐지 모델 구현 및 딥러닝 성능 최적화 |
 | **최재영** | 팀원 | [@ggj0916-dotcom](https://github.com/ggj0916-dotcom) | 백엔드 서버 및 데이터베이스(DB) 구축 (백엔드 총괄) |
 | **김경호** | 팀원 | [@KKH-930](https://github.com/KKH-930) | 백엔드 및 DB 구현, 검증용 AI 이미지 데이터 생성 |
