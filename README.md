@@ -23,8 +23,9 @@ PyTorch 기반의 **공간(Spatial) 및 주파수(Frequency) 듀얼 스트림 �
 
 1. **분석 대상 추출 및 정밀 전처리 파이프라인**
    - 사용자가 업로드한 이미지에서 주요 분석 대상(얼굴 영역 등)을 추출하고, 이미지 내 미세 노이즈 성분을 정제·정규화하는 전처리 모듈 구현
-2. **다중 기준 기반 AI 탐지 로직 설계**
-   - 픽셀 단위의 시각적 변조 흔적(RGB 공간 영역)과 2D DCT 변환을 통한 주파수 대역의 불일치 여부(주파수 영역)를 판별 기준으로 삼아 조작 확률을 산출하는 3종 탐지 모델 및 앙상블 로직 구축
+2. **코어 AI 모델 통합 및 하이브리드 탐지 로직 설계 (`composite_detector_models.py`)**
+   - **손현준**이 구현한 **단일 도메인 특화 탐지 모델 2종**(`SpatialCNNDetector`, `FrequencyNoiseDetector`)과 **박준서**가 구현한 **특징 결합형 듀얼 스트림 모델 1종**(`DualStreamDeepfakeDetector`)을 단일 통합 모듈(`composite_detector_models.py`)로 결합
+   - 픽셀 단위의 시각적 변조 흔적(RGB 공간 영역)과 2D DCT 주파수 대역의 불일치 여부(주파수 영역)를 독립적·복합적으로 동시 분석하여 조작 확률 도출
 3. **자체 생성 데이터 기반 적대적 취약점 검증 및 재학습**
    - 최신 생성형 AI 도구를 활용해 자체적인 고품질 가짜 이미지를 직접 생성하고, 이를 통해 탐지 모델의 오탐 및 취약점을 공격·검증한 뒤 추가 학습을 수행하여 방어 성능 고도화
 4. **백엔드 API 및 데이터베이스 로그 체계 구축**
@@ -46,8 +47,8 @@ PyTorch 기반의 **공간(Spatial) 및 주파수(Frequency) 듀얼 스트림 �
 
 | 이름 | 구분 | GitHub | 담당 역할 (Role) |
 | :---: | :---: | :--- | :--- |
-| **박준서** | 조장 | [@AloneFihser](https://github.com/AloneFihser) | 시스템 전체 설계 및 프로젝트 총괄, AI 딥러닝 |
-| **손현준** | 팀원 | [@hyenjune](https://github.com/hyenjune) | AI 메인 탐지 모델 구현 및 딥러닝 성능 최적화 |
+| **박준서** | 조장 | [@AloneFihser](https://github.com/AloneFihser) | 시스템 전체 설계 및 프로젝트 총괄, AI 딥러닝 (`DualStreamDeepfakeDetector` 구현 및 코어 모델 통합) |
+| **손현준** | 팀원 | [@hyenjune](https://github.com/hyenjune) | AI 메인 탐지 모델 구현 (`SpatialCNNDetector`, `FrequencyNoiseDetector`) 및 딥러닝 성능 최적화 |
 | **최재영** | 팀원 | [@ggj0916-dotcom](https://github.com/ggj0916-dotcom) | 백엔드 서버 및 데이터베이스(DB) 구축 (백엔드 총괄) |
 | **김경호** | 팀원 | [@KKH-930](https://github.com/KKH-930) | 백엔드 및 DB 구현, 검증용 AI 이미지 데이터 생성 |
 | **이신석** | 팀원 | [@lesin4929-max](https://github.com/lesin4929-max) | AI 학습 데이터셋 수집 및 이미지 전처리 파이프라인 구축 |
@@ -55,25 +56,26 @@ PyTorch 기반의 **공간(Spatial) 및 주파수(Frequency) 듀얼 스트림 �
 
 ---
 
-## ✨ 주요 특징 (Key Features)
+## ✨ 주요 특징 및 아키텍처 통합 (Key Features & Model Integration)
 
-- **Multi-Stream 앙상블 아키텍처**:
-  1. `SpatialCNNDetector` (EfficientNet-B0): RGB 컬러 영역에서 피부 질감, 경계 왜곡 등 시각적 단서 추출
-  2. `FrequencyNoiseDetector` (4-Layer Custom CNN): 1채널 2D DCT 주파수 맵에서 고주파 격자 노이즈 패턴 분석
-  3. `DualStreamDeepfakeDetector` (EfficientNet-B0 + ResNet-18): 공간 특징(1280D)과 주파수 특징(512D)을 결합(1792D)한 하이브리드 정밀 분석
-- **Weighted Soft Voting Ensemble**: 3개 모델의 Softmax 확률을 가중 평균(`0.3 : 0.3 : 0.4`)으로 종합하여 최종 신뢰도 도출
+- **AI 코어 모델 통합 아키텍처 (`composite_detector_models.py`)**:
+  팀원별 핵심 AI 모듈(**손현준**: 단일 도메인 모델 2종 + **박준서**: 듀얼 스트림 결합 모델 1종)을 하나의 통합 파일로 병합하여, 단일 모델의 독립 판별과 다중 특징 융합 판별이 동시에 이루어지는 3-모델 앙상블 구조를 완성했습니다.
+  1. **`SpatialCNNDetector` (EfficientNet-B0 / RGB 전용 — 구현: 손현준)**: 컬러 원본 이미지에서 피부 질감, 경계 왜곡 등 시각적 공간 단서(`1280D`) 추출 및 판정
+  2. **`FrequencyNoiseDetector` (4-Layer Custom CNN / DCT 1채널 전용 — 구현: 손현준)**: 2D DCT 주파수 변환 맵에서 고주파 격자 노이즈 및 압축 아티팩트(`512D`) 추출 및 판정
+  3. **`DualStreamDeepfakeDetector` (EfficientNet-B0 + ResNet-18 / 하이브리드 결합 — 구현: 박준서)**: 공간 특징(`1280D`)과 주파수 특징(`512D`)을 직렬 결합(`1792D` Concatenation) 후 심층 분류기(`512D` 병목 압축)를 거쳐 정밀 판정
+- **Weighted Soft Voting Ensemble**: 통합된 3개 모델의 Softmax 확률을 가중 평균(`0.3 : 0.3 : 0.4`)으로 종합하여 최종 신뢰도 도출
 - **End-to-End 자동화 파이프라인**: 필수 패키지 자동 점검(`setup_env.py`), 다양한 압축 포맷(`.zip`, `.tar.gz`, `.gz`) 자동 해제, Google Drive 연동 데이터셋 다운로드 지원
-- **이력 관리 및 웹 대시보드**: SQLite 기반 탐지 로그 자동 기록 및 Streamlit 기반 실시간 이미지 판별 웹 UI 제공
+- **이력 관리 및 웹 대시보드**: SQLite 기반 탐지 로그 자동 기록 및 웹 UI(Streamlit / FastAPI 분리형 지원) 기반 실시간 이미지 판별 제공
 
 ---
 
 ## 🏗️ 시스템 아키텍처 (System Architecture)
 
 ```text
-[Input Image] ──┬──> RGB Spatial Tensor [3x256x256] ──┬──> SpatialCNNDetector ───────┐
-                │                                     └──> DualStreamDeepfakeDetector ┼──> Soft Voting ──> Final Prediction
-                └──> 2D DCT Freq Map [1x256x256] ─────┬──> FrequencyNoiseDetector ───┘      Ensemble         (Real / Fake)
-                                                      └──> DualStreamDeepfakeDetector ┘
+[Input Image] ──┬──> RGB Spatial Tensor [3x256x256] ──┬──> SpatialCNNDetector (1280D) ──────┐
+                │                                     └──> DualStreamDeepfakeDetector ──────┼──> Soft Voting ──> Final Prediction
+                └──> 2D DCT Freq Map [1x256x256] ─────┬──> FrequencyNoiseDetector (512D) ───┘      Ensemble         (Real / Fake)
+                                                      └──> DualStreamDeepfakeDetector (1792D) ┘
 ```
 
 ---
@@ -86,11 +88,11 @@ Deep-catch/
 ├── download_dataset.py            # Google Drive 연동 데이터셋 자동 다운로드 스크립트
 ├── decompress.py                  # .zip, .tar.gz, .gz 압축 자동 해제 모듈
 ├── dataset.py                     # RGB 전처리 및 2D DCT 주파수 맵 생성 Custom Dataset
-├── composite_detector_models.py   # 3종 탐지 모델 아키텍처 정의 (Spatial, Frequency, DualStream)
+├── composite_detector_models.py   # [통합 모듈] 3종 탐지 모델 아키텍처 (손현준: Spatial/Freq + 박준서: DualStream)
 ├── train_all.py                   # 3종 모델 독립 학습 및 최적 가중치(.pth) 저장 파이프라인
 ├── ensemble_detector.py           # 3종 모델 가중치 로드 및 앙상블 추론 엔진
 ├── database.py                    # SQLite 탐지 결과 기록 및 조회 모듈
-└── app.py                         # Streamlit 기반 실시간 탐지 웹 대시보드
+└── app.py                         # 실시간 탐지 웹 대시보드 및 API 서버
 ```
 
 ---
@@ -108,7 +110,7 @@ cd Deep-catch
 python setup_env.py
 ```
 
-**주요 의존성 패키지:** `torch`, `torchvision`, `opencv-python`, `numpy`, `Pillow`, `streamlit`, `pandas`
+**주요 의존성 패키지:** `torch`, `torchvision`, `opencv-python`, `numpy`, `scipy`, `Pillow`, `streamlit`, `pandas`
 
 ---
 
@@ -124,7 +126,7 @@ extracted_data/
 ```
 
 ### 2. 모델 학습 (Training)
-3가지 탐지 모델을 순차적으로 학습하고 최고 성능의 가중치 파일(`best_Spatial.pth`, `best_Frequency.pth`, `best_DualStream.pth`)을 저장합니다.
+통합 모듈(`composite_detector_models.py`)의 3가지 탐지 모델을 순차적으로 학습하고 최고 성능의 가중치 파일(`best_Spatial.pth`, `best_Frequency.pth`, `best_DualStream.pth`)을 저장합니다.
 
 ```bash
 python train_all.py
@@ -139,7 +141,7 @@ python ensemble_detector.py
 ```
 
 ### 4. 웹 대시보드 실행 (Web UI)
-Streamlit 웹 인터페이스를 실행하여 브라우저에서 직접 이미지를 업로드하고 탐지 이력을 조회합니다.
+웹 인터페이스를 실행하여 브라우저에서 직접 이미지를 업로드하고 탐지 이력을 조회합니다.
 
 ```bash
 streamlit run app.py
@@ -152,7 +154,7 @@ streamlit run app.py
 ### ✅ 실제 적용 데이터셋 (Applied Dataset)
 - **[CIFAKE: Real and AI-Generated Synthetic Images](https://www.kaggle.com/datasets/birdy654/cifake-real-and-ai-generated-synthetic-images)**
   - **구성**: CIFAR-10 원본 이미지(`REAL`) 60,000장 + Stable Diffusion v1.4 생성 이미지(`FAKE`) 60,000장 (총 120,000장)
-  - **활용**: 본 프로젝트의 3종 탐지 모델(`Spatial`, `Frequency`, `DualStream`) 학습 및 앙상블 파이프라인 검증에 실제 적용됨
+  - **활용**: 본 프로젝트의 3종 통합 탐지 모델(`Spatial`, `Frequency`, `DualStream`) 학습 및 앙상블 파이프라인 검증에 실제 적용됨
 
 ### 🔍 확장 학습용 추천 데이터셋 (Recommended Datasets)
 - **얼굴 딥페이크 탐지**: [FaceForensics++](https://github.com/ondyari/FaceForensics), [Celeb-DF (v2)](https://github.com/yuezunli/celeb-deepfakeforensics), [DFDC](https://www.kaggle.com/c/deepfake-detection-challenge/data)
