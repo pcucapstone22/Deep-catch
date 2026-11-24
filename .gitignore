@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+venv/
+.env
+*.db
+extracted_data/
+*.zip
+*.tar.gz
+*.gz
