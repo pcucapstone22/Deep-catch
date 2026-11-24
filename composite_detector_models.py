@@ -36,6 +36,7 @@ class SpatialCNNDetector(nn.Module):
         # 1. 백본 망을 통과시켜 1280차원 공간 특징 벡터 추출 [Batch, 1280]
         features = self.backbone(rgb_image)
         
+
         # 2. 최종 분류 층을 통과시켜 로짓 출력 [Batch, 2]
         output = self.classifier(features)
         return output
