@@ -7,13 +7,17 @@ import sys
 # - value: 파이썬 코드에서 import 할 때 사용하는 모듈명
 # ========================================================
 REQUIRED_PACKAGES = {
-    "torch": "torch",               # PyTorch 딥러닝 프레임워크
-    "torchvision": "torchvision",   # 컴퓨터 비전 모델 및 전처리 도구
-    "opencv-python": "cv2",         # 이미지 처리 및 DCT 주파수 변환
-    "numpy": "numpy",               # 다차원 배열 및 수치 연산
-    "Pillow": "PIL",                # 이미지 파일 입출력 (import PIL)
-    "streamlit": "streamlit",       # 웹 대시보드 및 UI 구현
-    "pandas": "pandas"              # 데이터프레임 및 DB 로그 표 처리
+    "torch": "torch",                   # PyTorch 딥러닝 프레임워크
+    "torchvision": "torchvision",       # 컴퓨터 비전 모델 및 전처리 도구
+    "opencv-python": "cv2",             # 이미지 처리 및 DCT 주파수 변환
+    "numpy": "numpy",                   # 다차원 배열 및 수치 연산
+    "scipy": "scipy",                   # 2D DCT 주파수 변환 연산
+    "Pillow": "PIL",                    # 이미지 파일 입출력 (import PIL)
+    "streamlit": "streamlit",           # 웹 대시보드 및 UI 구현
+    "pandas": "pandas",                 # 데이터프레임 및 DB 로그 표 처리
+    "fastapi": "fastapi",               # FastAPI 백엔드 웹 프레임워크
+    "uvicorn": "uvicorn",               # FastAPI 구동용 ASGI 웹 서버
+    "python-multipart": "multipart"     # FastAPI 이미지 파일 업로드(UploadFile) 처리
 }
 
 def install_and_verify():
@@ -39,10 +43,10 @@ def install_and_verify():
         try:
             # 동적으로 모듈 import 시도
             __import__(import_name)
-            print(f"  [✓] {pip_name:<15} : 이미 설치되어 있습니다.")
+            print(f"  [✓] {pip_name:<18} : 이미 설치되어 있습니다.")
             installed_count += 1
         except ImportError:
-            print(f"  [X] {pip_name:<15} : 미설치 상태입니다. (설치 대상)")
+            print(f"  [X] {pip_name:<18} : 미설치 상태입니다. (설치 대상)")
             missing_packages.append(pip_name)
 
     # 3. 누락된 패키지가 있을 경우에만 자동 설치 진행
