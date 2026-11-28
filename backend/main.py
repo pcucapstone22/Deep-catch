@@ -22,9 +22,8 @@ from torchvision import models, transforms
 FAKE_CLASS_INDEX = 1
 
 # 2) 2D DCT 인스턴스 정규화 적용 여부:
-#    - 학습 시 dct_log를 평균 0, 표준편차 1로 정규화하여 재학습한 경우 True 권장
-#    - 기존 정규화 없이 학습된 .pth 파일을 그대로 쓸 때는 False로 설정
-USE_DCT_INSTANCE_NORM = True
+#    - 기존 학습된 .pth 파일의 입력 분포(정규화 미적용 log(|DCT| + 1e-5))와 일치시키기 위해 False로 설정
+USE_DCT_INSTANCE_NORM = False
 
 # 3) 엄격한 가중치 키 검증 여부:
 #    - True 권장: 학습 모델과 레이어 이름이 다르면 조용히 무시하지 않고 즉시 경고 출력
@@ -104,8 +103,6 @@ def save_result_to_db(
 # ==============================================================================
 # [2] 3종 딥페이크 탐지 모델 아키텍처 (학습 코드 구조 우선 임포트)
 # ==============================================================================
-# 학습 시 사용한 composite_detector_models.py가 존재하면 해당 클래스 구조를 그대로 가져와
-# state_dict 레이어 변수명 불일치(가중치 증발 현상)를 원천 방지합니다.
 try:
     from composite_detector_models import (
         SpatialCNNDetector,
@@ -234,17 +231,12 @@ dual_model = DualStreamDeepfakeDetector(num_classes=2).to(device)
 
 
 def load_weights_safely(model: nn.Module, filenames: list[str]) -> bool:
-    """
-    saved_models, 현재 폴더, 상위 폴더 순으로 .pth 가중치를 탐색해 로드합니다.
-    - STRICT_WEIGHT_LOADING=True일 경우 레이어 키가 1개라도 어긋나면 명확히 에러 원인을 출력하여
-      학습되지 않은 초기 가중치로 추론되는 사고를 방지합니다.
-    """
+    """saved_models, 현재 폴더, 상위 폴더 순으로 .pth 가중치를 탐색해 로드합니다."""
     search_dirs = [MODEL_DIR, BASE_DIR, PARENT_DIR]
     for filename in filenames:
         for folder in search_dirs:
             path = os.path.join(folder, filename)
             if os.path.exists(path):
-                # 19바이트 등 비정상 빈 파일(Git LFS 포인터/손상 압축 파일) 사전 차단
                 if os.path.getsize(path) < 1024:
                     print(
                         f"[오류] 가중치 파일({path}) 용량이 너무 작습니다({os.path.getsize(path)}B). "
@@ -259,7 +251,6 @@ def load_weights_safely(model: nn.Module, filenames: list[str]) -> bool:
                         if isinstance(ckpt, dict) and "model_state_dict" in ckpt
                         else ckpt
                     )
-                    # DataParallel('module.' 접두사)로 저장된 체크포인트 자동 호환 처리
                     cleaned_state_dict = {
                         k.replace("module.", ""): v for k, v in state_dict.items()
                     }
@@ -300,11 +291,7 @@ rgb_transform = transforms.Compose(
 
 
 def preprocess_image(image: Image.Image) -> tuple[torch.Tensor, torch.Tensor]:
-    """
-    PIL 이미지를 공간(RGB) 텐서와 2D DCT 주파수 텐서로 변환합니다.
-    - USE_DCT_INSTANCE_NORM이 활성화되면 이미지별 밝기·JPEG 압축 편차를 줄이기 위해
-      평균 0, 표준편차 1로 스케일을 정규화합니다.
-    """
+    """PIL 이미지를 공간(RGB) 텐서와 2D DCT 주파수 텐서로 변환합니다."""
     rgb_tensor = rgb_transform(image).unsqueeze(0).to(device)
 
     gray_256 = np.float32(image.convert("L").resize((256, 256)))
